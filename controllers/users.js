@@ -32,7 +32,7 @@ const getUserById = (req, res) => {
       }
     })
     .catch((error) => {
-      if (error.name === 'ValidationError') {
+      if (error.name === 'CastError') {
         return res.status(400).send({ message: 'Переданы не валидные данные' });
       }
       return res
