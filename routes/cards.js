@@ -13,4 +13,8 @@ cardsRouter.delete('/cards/:cardId', deleteCard);
 cardsRouter.put('/cards/:cardId/likes', likeCard);
 cardsRouter.delete('/cards/:cardId/likes', dislikeCard);
 
+cardsRouter.use('/*', (req, res) => {
+  res.status(404).send({ message: '404: Not Found' });
+});
+
 module.exports = cardsRouter;
