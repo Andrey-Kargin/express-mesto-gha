@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const { JWT_SECRET } = process.env;
+const { NODE_ENV, JWT_SECRET } = process.env;
 const User = require('../models/user');
 
 const BadRequestError = require('../errors/bad-request-error');
@@ -39,7 +39,7 @@ const createUser = (req, res, next) => {
           ))
         .catch((err) => {
           if (err.code === 11000) {
-            return next(new ConflictError('Пользователь с таким email уже зарегестрирован'));
+            next(new ConflictError('Пользователь с таким email уже зарегестрирован'));
           }
           if (err.name === 'ValidationError') {
             return next(new BadRequestError('Пользователь не найден'));
@@ -55,7 +55,7 @@ const login = (req, res, next) => {
     .then((user) => {
       const token = jwt.sign(
         { _id: user._id },
-        JWT_SECRET,
+        NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret',
         { expiresIn: '7d' },
       );
 

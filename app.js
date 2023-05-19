@@ -1,4 +1,5 @@
-require('dotenv').config({ path: './.env' });
+require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const { errors } = require('celebrate');
@@ -35,10 +36,9 @@ app.use(cardsRouter);
 app.use(errors());
 
 app.use((err, req, res, next) => {
-  console.log(err);
-  const { statusCode = 500, message } = err;
-  res.status(statusCode).send({
-    message: statusCode === 500 ? 'Ошибка сервера' : message,
+  const { status = 500, message } = err;
+  res.status(status).send({
+    message: status === 500 ? 'Ошибка сервера' : message,
   });
 
   next();
