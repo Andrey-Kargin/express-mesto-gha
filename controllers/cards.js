@@ -1,6 +1,10 @@
 const Card = require('../models/card');
 
-const createCard = (req, res) => {
+const NotFoundError = require('../errors/not-fount-error');
+const BadRequestError = require('../errors/bad-request-error');
+const ForbiddenError = require('../errors/forbidden-error');
+
+const createCard = (req, res, next) => {
   const { name, link } = req.body;
   const owner = req.user._id;
 
@@ -8,49 +12,37 @@ const createCard = (req, res) => {
     .then((cards) => {
       res.send(cards);
     })
-    .catch((error) => {
-      if (error.name === 'ValidationError') {
-        return res.status(400).send({
-          message: 'Переданы некорректные данные при создании карточки.',
-        });
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new BadRequestError('Переданы некорректные данные для удаления карточки'));
+      } else {
+        next(err);
       }
-      return res
-        .status(500)
-        .send({ message: 'На сервере произошла ошибка' });
     });
 };
 
-const getCards = (req, res) => {
+const getCards = (req, res, next) => {
   Card.find({})
-    .then((cards) => res.send({ cards }))
-    .catch(() => {
-      res.status(500).send({ message: 'На сервере произошла ошибка' });
-    });
+    .then((cards) => res.status(200)
+      .send(cards))
+    .catch(next);
 };
 
-const deleteCard = (req, res) => {
+const deleteCard = (req, res, next) => {
   Card.findByIdAndRemove(req.params.cardId)
     .then((card) => {
       if (!card) {
-        res
-          .status(404)
-          .send({ message: ' Карточка с указанным _id не найдена.' });
-      } else {
-        res.send(card);
+        throw new NotFoundError('Пользователь не найден');
       }
+      if (!card.owner.equals(req.user._id)) {
+        return next(new ForbiddenError('Невозможно удалить карточку другого пользователя'));
+      }
+      return card.deleteOne().then(() => res.send({ message: 'Карточка удалена' }));
     })
-    .catch((error) => {
-      if (error.name === 'CastError') {
-        res.status(400).send({
-          message: 'Переданы некорректные данные',
-        });
-      } else {
-        res.status(500).send({ message: 'На сервере произошла ошибка' });
-      }
-    });
+    .catch(next);
 };
 
-const likeCard = (req, res) => {
+const likeCard = (req, res, next) => {
   const owner = req.user._id;
   const { cardId } = req.params;
 
@@ -61,25 +53,19 @@ const likeCard = (req, res) => {
   )
     .then((card) => {
       if (!card) {
-        res
-          .status(404)
-          .send({ message: 'Передан несуществующий _id карточки.' });
-      } else {
-        res.send({ card });
+        throw new NotFoundError('Пользователь не найден');
       }
+      res.send({ data: card });
     })
-    .catch((error) => {
-      if (error.name === 'CastError') {
-        res.status(400).send({
-          message: 'Переданы некорректные данные',
-        });
-      } else {
-        res.status(500).send({ message: 'На сервере произошла ошибка' });
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        return next(new BadRequestError('Переданы некорректные данные'));
       }
+      return next(err);
     });
 };
 
-const dislikeCard = (req, res) => {
+const dislikeCard = (req, res, next) => {
   const owner = req.user._id;
   const { cardId } = req.params;
 
@@ -90,21 +76,15 @@ const dislikeCard = (req, res) => {
   )
     .then((card) => {
       if (!card) {
-        res
-          .status(404)
-          .send({ message: 'Передан несуществующий _id карточки.' });
-      } else {
-        res.send({ card });
+        throw new NotFoundError('Пользователь не найден');
       }
+      res.send({ data: card });
     })
-    .catch((error) => {
-      if (error.name === 'CastError') {
-        res.status(400).send({
-          message: 'Переданы некорректные данные',
-        });
-      } else {
-        res.status(500).send({ message: 'На сервере произошла ошибка' });
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        return next(new BadRequestError('Переданы некорректные данные'));
       }
+      return next(err);
     });
 };
 
