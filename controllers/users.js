@@ -39,7 +39,7 @@ const createUser = (req, res, next) => {
           ))
         .catch((err) => {
           if (err.code === 11000) {
-            next(new ConflictError('Пользователь с таким email уже зарегестрирован'));
+            return next(new ConflictError('Пользователь с таким email уже зарегестрирован'));
           }
           if (err.name === 'ValidationError') {
             return next(new BadRequestError('Пользователь не найден'));
@@ -95,15 +95,7 @@ const getUser = (req, res, next) => {
       res.status(200)
         .send(user);
     })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        next(BadRequestError('Переданы некорректные данные'));
-      } else if (err.message === 'NotFound') {
-        next(new NotFoundError('Пользователь не найден'));
-      } else {
-        next(err);
-      }
-    });
+    .catch(next);
 };
 
 const updateUser = (req, res, next) => {
@@ -123,11 +115,10 @@ const updateUser = (req, res, next) => {
         .send(user);
     })
     .catch((err) => {
-      if (err.name === 'ValidationError' || err.name === 'CastError') {
-        next(BadRequestError('Переданы некорректные данные'));
-      } else {
-        next(err);
+      if (err.name === 'ValidationError') {
+        return next(new BadRequestError('Переданы некорректные данные'));
       }
+      return next(err);
     });
 };
 
@@ -136,14 +127,18 @@ const updateAvatar = (req, res, next) => {
   const avatar = req.body;
 
   User.findByIdAndUpdate(owner, avatar, { new: true, runValidators: true })
-    .then((user) => res.status(200)
-      .send(user))
-    .catch((err) => {
-      if (err.name === 'CastError' || err.name === 'ValidationError') {
-        next(new BadRequestError('Incorrect data'));
-      } else {
-        next(err);
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Пользователь не найден');
       }
+      res.status(200)
+        .send(user);
+    })
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        return next(new BadRequestError('Переданы некорректные данные'));
+      }
+      return next(err);
     });
 };
 
