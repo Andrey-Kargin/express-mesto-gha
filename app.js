@@ -4,6 +4,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const { errors } = require('celebrate');
 const router = require('./routes');
+const cors = require('./middlewares/cors');
 
 const {
   createUserValidation,
@@ -22,7 +23,7 @@ const { PORT = 3000, MONGO_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process
 mongoose.connect(MONGO_URL);
 
 const app = express();
-app.use(express.json());
+app.use(cors);
 
 app.post('/signin', loginValidation, login);
 app.post('/signup', createUserValidation, createUser);
